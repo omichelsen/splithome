@@ -75,7 +75,7 @@ export default function AddExpenseModal({ onAdd, onClose }) {
           <div className="field">
             <label>Paid by</label>
             <div className="toggle-group">
-              {['ole', 'wife'].map(who => (
+              {['ole', 'yewleh'].map(who => (
                 <button
                   key={who}
                   type="button"

@@ -46,8 +46,8 @@ To access from both your phones:
 
 **Adding an expense:**
 - Enter description and amount
-- Select who paid (you or wife)
-- Drag the split slider — center = 50/50, drag left = you pay more, drag right = wife pays more
+- Select who paid (Ole or Yewleh)
+- Drag the split slider — center = 50/50, drag left = you pay more, drag right = Yewleh pays more
 - Add optional notes and date
 
 **The balance:**
