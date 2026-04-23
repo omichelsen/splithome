@@ -25,8 +25,8 @@ Open `.env` and paste your Supabase URL and anon key.
 ### 3. Install and run
 
 ```bash
-npm install
-npm run dev
+pnpm install
+pnpm dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173) — you should see the app!
