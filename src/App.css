@@ -99,6 +99,7 @@ body {
 .balance-card.settled   { background: var(--settled-light); border: 1px solid #c4dccb; }
 .balance-card.yewleh-owes { background: var(--yewleh-light);    border: 1px solid #ddb8cc; }
 .balance-card.ole-owes   { background: var(--ole-light);     border: 1px solid #b8cec5; }
+.balance-card.balance-loading { background: var(--surface); border: 1px solid var(--border); }
 
 .balance-main {
   display: flex;
@@ -272,6 +273,13 @@ body {
     align-self: start;
     margin-top: 0;
   }
+
+  .skeleton-delete {
+    grid-column: 2;
+    grid-row: 2;
+    justify-self: end;
+    align-self: start;
+  }
 }
 
 /* ─── Empty State ─── */
@@ -279,7 +287,48 @@ body {
 .empty-state p:first-child { font-size: 16px; margin-bottom: 4px; color: var(--text2); }
 
 /* ─── Loading ─── */
-.loading { text-align: center; padding: 40px; color: var(--text3); }
+.skeleton-line {
+  display: block;
+  position: relative;
+  overflow: hidden;
+  background: var(--surface2);
+  border-radius: 6px;
+}
+.skeleton-line::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.72), transparent);
+  animation: skeleton-glimmer 1.4s ease-in-out infinite;
+}
+@keyframes skeleton-glimmer {
+  100% { transform: translateX(100%); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .skeleton-line::after { animation: none; }
+}
+
+.skeleton-label { width: 132px; height: 22px; }
+.skeleton-balance-amount { width: 118px; height: 42px; border-radius: 8px; }
+.skeleton-stat-value { width: 42px; height: 18px; margin: 0 auto; }
+.skeleton-stat-label { width: 78px; height: 15px; margin: 7px auto 0; }
+
+.skeleton-list { gap: 8px; }
+.skeleton-expense { pointer-events: none; }
+.skeleton-expense:hover { box-shadow: none; }
+.skeleton-desc { width: min(72%, 260px); height: 23px; }
+.skeleton-meta { width: min(88%, 320px); height: 18px; margin-top: 4px; }
+.skeleton-total { width: 64px; height: 20px; border-radius: 7px; }
+.skeleton-chip { width: 82px; height: 19px; border-radius: 10px; }
+.skeleton-chip-short { width: 96px; }
+.skeleton-delete { width: 20px; height: 20px; border-radius: 4px; }
+
+@media (max-width: 480px) {
+  .skeleton-balance-amount {
+    height: 36px;
+  }
+}
 
 /* ─── Modal ─── */
 .modal-overlay {

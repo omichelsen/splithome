@@ -6,6 +6,31 @@ import ExpenseList from './components/ExpenseList'
 import AddExpenseModal from './components/AddExpenseModal'
 import './App.css'
 
+function ExpenseListSkeleton() {
+  return (
+    <ul className="expense-list skeleton-list" aria-busy="true" aria-label="Loading expenses">
+      {Array.from({ length: 5 }).map((_, index) => (
+        <li className="expense-item skeleton-expense" key={index}>
+          <div className="expense-main">
+            <div className="expense-left">
+              <span className="skeleton-line skeleton-desc" />
+              <span className="skeleton-line skeleton-meta" />
+            </div>
+            <div className="expense-right">
+              <span className="skeleton-line skeleton-total" />
+              <div className="expense-shares">
+                <span className="skeleton-line skeleton-chip" />
+                <span className="skeleton-line skeleton-chip skeleton-chip-short" />
+              </div>
+              <span className="skeleton-line skeleton-delete" />
+            </div>
+          </div>
+        </li>
+      ))}
+    </ul>
+  )
+}
+
 export default function App() {
   const [expenses, setExpenses] = useState([])
   const [loading, setLoading] = useState(true)
@@ -89,6 +114,7 @@ export default function App() {
           balance={balance}
           totalExpenses={totalSpent}
           expenseCount={expenses.length}
+          loading={loading}
         />
 
         <div className="list-section">
@@ -108,7 +134,7 @@ export default function App() {
           </div>
 
           {loading ? (
-            <div className="loading">Loading…</div>
+            <ExpenseListSkeleton />
           ) : (
             <ExpenseList expenses={filtered} onDelete={handleDelete} />
           )}
