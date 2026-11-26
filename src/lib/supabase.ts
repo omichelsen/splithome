@@ -15,7 +15,18 @@ interface Database {
 			[_ in never]: never
 		}
 		Functions: {
-			[_ in never]: never
+			/** Totals over ALL expenses, computed in Postgres — see
+			 * schema.sql. The headline balance comes from here, so the
+			 * app never has to download every row to show it. */
+			get_expense_summary: {
+				Args: Record<string, never>
+				Returns: {
+					balance: number
+					total_spent: number
+					expense_count: number
+					oldest_date: string | null
+				}[]
+			}
 		}
 	}
 }

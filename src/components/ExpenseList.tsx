@@ -9,14 +9,21 @@ import type { Expense } from '../lib/types'
 interface ExpenseListProps {
 	expenses: Expense[]
 	onDelete: (id: Expense['id']) => void
+	/** Replaces the empty state when the list is empty for a reason
+	 * other than "no expenses at all" — e.g. a month with no expenses. */
+	emptyMessage?: string
 }
 
-export default function ExpenseList({ expenses, onDelete }: ExpenseListProps) {
+export default function ExpenseList({
+	expenses,
+	onDelete,
+	emptyMessage,
+}: ExpenseListProps) {
 	if (expenses.length === 0) {
 		return (
 			<div className="empty-state">
-				<p>No expenses yet.</p>
-				<p>Add your first one above!</p>
+				<p>{emptyMessage ?? 'No expenses yet.'}</p>
+				{!emptyMessage && <p>Add your first one above!</p>}
 			</div>
 		)
 	}
