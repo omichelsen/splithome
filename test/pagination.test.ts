@@ -5,6 +5,7 @@ import {
 	addDays,
 	buildKeysetOr,
 	compareExpenses,
+	filterByEarliestDate,
 	formatMonthLabel,
 	isOlderThanCursor,
 	mergeExpenses,
@@ -217,6 +218,48 @@ describe('buildKeysetOr', () => {
 			'date.lt.2026-08-28,' +
 				'and(date.eq.2026-08-28,created_at.lt.2026-08-28T10:00:00.000Z),' +
 				'and(date.eq.2026-08-28,created_at.eq.2026-08-28T10:00:00.000Z,id.lt.42)'
+		)
+	})
+})
+
+describe('filterByEarliestDate', () => {
+	// The reported bug: on 2026-11-26 the 90-day cutoff is 2026-08-28.
+	// "Load more" fetched August 1–27 rows and merged them into the
+	// cache, but the list filtered on the fixed cutoff, so they never
+	// showed and the click looked like it did nothing.
+	const rows = [
+		expense({ id: 1, date: '2026-09-03' }),
+		expense({ id: 2, date: '2026-08-28' }),
+		expense({ id: 3, date: '2026-08-27' }),
+		expense({ id: 4, date: '2026-08-01' }),
+		expense({ id: 5, date: '2026-07-15' }),
+	]
+
+	it('before any Load More, rows before the cutoff are hidden', () => {
+		assert.deepEqual(
+			filterByEarliestDate(rows, '2026-08-28').map((row) => row.id),
+			[1, 2]
+		)
+	})
+
+	it('after Load More completes August, rows back to August 1 are shown', () => {
+		assert.deepEqual(
+			filterByEarliestDate(rows, monthStart('2026-08')).map((row) => row.id),
+			[1, 2, 3, 4]
+		)
+	})
+
+	it('after Load More fetches July, July rows are shown too', () => {
+		assert.deepEqual(
+			filterByEarliestDate(rows, monthStart('2026-07')).map((row) => row.id),
+			[1, 2, 3, 4, 5]
+		)
+	})
+
+	it('an empty earliest date shows everything', () => {
+		assert.deepEqual(
+			filterByEarliestDate(rows, '').map((row) => row.id),
+			[1, 2, 3, 4, 5]
 		)
 	})
 })

@@ -4,9 +4,11 @@ import { fetchExpensesForMonth, fetchSummary } from './lib/expenses'
 import type { ExpenseSummary } from './lib/expenses'
 import {
 	RECENT_WINDOW_DAYS,
+	filterByEarliestDate,
 	formatMonthLabel,
 	mergeExpenses,
 	monthKeyOf,
+	monthStart,
 	monthsInRange,
 	previousMonthKey,
 	recentCutoff,
@@ -61,7 +63,10 @@ export default function App() {
 	const [monthComplete, setMonthComplete] = useState<Record<string, boolean>>(
 		{}
 	)
-	const [recentCutoffStr, setRecentCutoffStr] = useState('')
+	/** Earliest date shown in recent mode. Starts at the 90-day cutoff
+	 * and moves back as "Load more" extends the loaded range, so rows
+	 * it fetched are actually shown. */
+	const [earliestVisibleDate, setEarliestVisibleDate] = useState('')
 	const [summary, setSummary] = useState<ExpenseSummary | null>(null)
 	const [summaryLoading, setSummaryLoading] = useState(true)
 	const [listLoading, setListLoading] = useState(true)
@@ -119,7 +124,7 @@ export default function App() {
 		const today = new Date()
 		const cutoff = recentCutoff(today)
 		const keys = monthsInRange(cutoff, toDateString(today))
-		setRecentCutoffStr(cutoff)
+		setEarliestVisibleDate(cutoff)
 		setVisibleKeys(keys)
 		setMode('recent')
 		try {
@@ -253,12 +258,16 @@ export default function App() {
 						: undefined,
 				})
 				setMonthComplete((prev) => ({ ...prev, [oldestKey]: true }))
+				// The completed month is now fully shown, back to its
+				// first day — not just back to the 90-day cutoff.
+				setEarliestVisibleDate(monthStart(oldestKey))
 			} else {
 				// Fetch the previous calendar month in full.
 				const prevKey = previousMonthKey(oldestKey)
 				await loadMonth(prevKey)
 				setMonthComplete((prev) => ({ ...prev, [prevKey]: true }))
 				setVisibleKeys((prev) => [...prev, prevKey])
+				setEarliestVisibleDate(monthStart(prevKey))
 			}
 		} catch {
 			setError('Could not load older expenses.')
@@ -291,7 +300,7 @@ export default function App() {
 	function handleBackToRecent(): void {
 		const today = new Date()
 		const cutoff = recentCutoff(today)
-		setRecentCutoffStr(cutoff)
+		setEarliestVisibleDate(cutoff)
 		setMode('recent')
 		setMonthInput('')
 		setVisibleKeys(monthsInRange(cutoff, toDateString(today)))
@@ -309,11 +318,13 @@ export default function App() {
 	})()
 
 	const visibleExpenses = visibleKeys.flatMap((key) => months[key] ?? [])
-	// In recent mode the list stops at the 90-day cutoff, even if a
-	// refetch pulled older rows of the oldest month into the cache.
+	// In recent mode the list stops at the earliest date actually
+	// loaded — the 90-day cutoff at first, then further back as "Load
+	// more" extends it. Filtering on the fixed cutoff hid rows Load
+	// More had fetched, so the list looked unchanged after clicking it.
 	const inWindowExpenses =
-		mode === 'recent' && recentCutoffStr
-			? visibleExpenses.filter((expense) => expense.date >= recentCutoffStr)
+		mode === 'recent' && earliestVisibleDate
+			? filterByEarliestDate(visibleExpenses, earliestVisibleDate)
 			: visibleExpenses
 	const filtered =
 		filter === 'all'
