@@ -8,6 +8,7 @@ import {
 	formatMonthLabel,
 	mergeExpenses,
 	monthKeyOf,
+	monthOptions,
 	monthStart,
 	monthsInRange,
 	previousMonthKey,
@@ -392,13 +393,20 @@ export default function App() {
 						)}
 						<label className="month-picker">
 							<span>Jump to month</span>
-							<input
-								type="month"
+							<select
 								value={monthInput}
-								max={currentMonth}
 								onChange={(event) => void handleMonthPick(event.target.value)}
 								aria-label="Jump to month"
-							/>
+							>
+								<option value="">Choose a month…</option>
+								{monthOptions(summary?.oldestDate ?? null, currentMonth).map(
+									(key) => (
+										<option key={key} value={key}>
+											{formatMonthLabel(key)}
+										</option>
+									)
+								)}
+							</select>
 						</label>
 					</div>
 

@@ -11,6 +11,7 @@ import {
 	mergeExpenses,
 	monthEnd,
 	monthKeyOf,
+	monthOptions,
 	monthStart,
 	monthsInRange,
 	previousMonthKey,
@@ -111,6 +112,39 @@ describe('month helpers', () => {
 	it('formatMonthLabel spells out the month', () => {
 		assert.equal(formatMonthLabel('2026-11'), 'November 2026')
 		assert.equal(formatMonthLabel('2025-12'), 'December 2025')
+	})
+
+	it('monthOptions lists months from the oldest expense, newest first', () => {
+		assert.deepEqual(monthOptions('2026-03-15', '2026-11'), [
+			'2026-11',
+			'2026-10',
+			'2026-09',
+			'2026-08',
+			'2026-07',
+			'2026-06',
+			'2026-05',
+			'2026-04',
+			'2026-03',
+		])
+	})
+
+	it('monthOptions handles a year boundary and a single month', () => {
+		assert.deepEqual(monthOptions('2025-12-20', '2026-01'), [
+			'2026-01',
+			'2025-12',
+		])
+		assert.deepEqual(monthOptions('2026-11-03', '2026-11'), ['2026-11'])
+	})
+
+	it('monthOptions falls back to a full year when the oldest date is unknown', () => {
+		const options = monthOptions(null, '2026-11')
+		assert.equal(options.length, 12)
+		assert.equal(options[0], '2026-11')
+		assert.equal(options[11], '2025-12')
+	})
+
+	it('monthOptions never lists a future month', () => {
+		assert.deepEqual(monthOptions('2027-02-01', '2026-11'), ['2026-11'])
 	})
 })
 

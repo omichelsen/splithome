@@ -94,6 +94,31 @@ export function formatMonthLabel(key: string): string {
 	})
 }
 
+/** Month keys for the "Jump to month" dropdown, newest first: from
+ * `currentMonth` back to the month of the oldest expense
+ * (`oldestDate`, a 'YYYY-MM-DD' string, or null when it isn't known
+ * yet). The fallback is the current month plus the previous 11 — a
+ * full year — so the dropdown is usable before the summary loads.
+ * A native `<input type="month">` was replaced by this dropdown
+ * because Safari's segmented month control is hard to type into and
+ * hard to clear; a select has nothing to type wrong or delete. */
+export function monthOptions(
+	oldestDate: string | null,
+	currentMonth: string,
+	fallbackMonths: number = 12
+): string[] {
+	if (oldestDate) {
+		const first = monthKeyOf(oldestDate)
+		if (first > currentMonth) return [currentMonth]
+		return monthsInRange(monthStart(first), monthStart(currentMonth))
+	}
+	let first = currentMonth
+	for (let index = 1; index < fallbackMonths; index++) {
+		first = previousMonthKey(first)
+	}
+	return monthsInRange(monthStart(first), monthStart(currentMonth))
+}
+
 /** The keyset cursor for "load more": the oldest row currently shown. */
 export interface ExpenseCursor {
 	date: string

@@ -317,7 +317,7 @@ body {
   font-size: 13px;
   color: var(--text2);
 }
-.month-picker input[type="month"] {
+.month-picker select {
   padding: 6px 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--border);
