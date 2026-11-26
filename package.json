@@ -9,7 +9,8 @@
 		"test": "node --test",
 		"build": "vite build",
 		"generate-pwa-assets": "pwa-assets-generator",
-		"preview": "vite preview"
+		"preview": "vite preview",
+		"lint": "eslint ."
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.104.0",
@@ -19,7 +20,12 @@
 	"devDependencies": {
 		"@vite-pwa/assets-generator": "^1.0.2",
 		"@vitejs/plugin-react": "^5.2.0",
+		"eslint": "^10.15.0",
+		"eslint-config-omichelsen": "^2.0.0",
+		"eslint-plugin-prettier": "5.5.7",
+		"prettier": "3.10.1",
 		"vite": "^7.3.2",
 		"vite-plugin-pwa": "^1.2.0"
-	}
+	},
+	"prettier": "eslint-config-omichelsen/.prettierrc.js"
 }
