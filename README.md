@@ -10,8 +10,8 @@ Live: https://splithome-gamma.vercel.app
   slider, a date (defaults to today), and optional notes. The slider moves in
   discrete steps (0, 10, 20, 25, 30, 40, 50, 60, 70, 75, 80, 90, 100%), where
   the percentage is Ole's share of the cost.
-- **Show the live balance** — who owes whom, and how much, recalculated from
-  all expenses on every render. A positive balance means Yewleh owes Ole; a
+- **Show the live balance** — who owes whom, and how much, from a single
+  server-side totals row. A positive balance means Yewleh owes Ole; a
   negative one means Ole owes Yewleh.
 - **Filter the list** — all expenses, or only those paid by Ole or by Yewleh.
 - **Delete an expense** — behind a confirmation prompt; the balance updates
@@ -48,13 +48,21 @@ Live: https://splithome-gamma.vercel.app
 
 ## How it works
 
-**Data flow** (`src/App.tsx`): on mount, `fetchExpenses()` selects all rows
-from the `expenses` table, ordered by `date` then `created_at`, newest first.
-A realtime channel (`expenses-changes`) subscribes to `postgres_changes` on
-`public.expenses` — any insert, update, or delete triggers a refetch, so both
-devices stay in sync. Adding an expense is a plain `insert()`; the realtime
-subscription then triggers the refetch (no optimistic update). Deleting is a
+**Data flow** (`src/App.tsx`): on mount, the app loads the server totals
+(`fetchSummary()` in `src/lib/expenses.ts`) and the months overlapping the
+last 90 days, a month at a time (`fetchExpensesForMonth()`). A realtime
+channel (`expenses-changes`) subscribes to `postgres_changes` on
+`public.expenses` — a change re-fetches the server totals and only the month
+it touches, so both devices stay in sync without re-downloading the whole
+history. Adding an expense is a plain `insert()`; deleting is a
 `delete().eq('id', id)` behind a `confirm()`.
+
+**The balance:** the balance, total spent, and expense count come from the
+server as a single row (`get_expense_summary()` in `schema.sql`), so the app
+never downloads the whole history just to show one number. Until that
+function is applied in the Supabase SQL editor, `fetchSummary()` falls back
+to computing the same totals from the `amount` / `paid_by` / `split_ratio`
+columns and logs a warning.
 
 **Balance logic** (`src/lib/balance.ts`, pure functions, unit-tested): for
 each expense, if Ole paid, Yewleh owes Ole her share — `amount × (1 −
@@ -64,7 +72,15 @@ everything, 1 = Ole pays everything). Amounts and ratios can arrive from
 Supabase as strings (numeric columns), so they are read through `toNumber()`.
 `formatCurrency` renders USD via `Intl.NumberFormat`; `getBalanceLabel`
 turns a balance into the "X owes Y …" text, treating anything under $0.01 as
-settled.
+settled. The SQL in `get_expense_summary()` uses the same math, and a test
+checks the two agree.
+
+**Loading older expenses:** the list shows the last 90 days by default,
+loaded a month at a time. "Load older expenses" fetches the next older month
+using a keyset cursor on (`date`, `created_at`, `id`) — no offsets, so rows
+added while scrolling back are not duplicated or skipped. The month picker
+jumps straight to any month. Already-loaded months are cached, so going back
+and forth never refetches.
 
 **Types** (`src/lib/types.ts`): `Expense` is the row as stored in Supabase
 (`id`, `description`, `amount`, `paid_by: 'ole' | 'yewleh'`, `split_ratio`,
@@ -109,10 +125,14 @@ year. Icons are generated with `pnpm generate-pwa-assets`
 │   │   └── ExpenseList.tsx      # Expense history + delete
 │   └── lib/
 │       ├── balance.ts      # Pure balance / formatting logic
+│       ├── expenses.ts     # Server totals + month queries
+│       ├── pagination.ts   # Month ranges, keyset cursor, month cache helpers
 │       ├── supabase.ts     # Typed Supabase client
 │       └── types.ts        # Expense, ExpenseInsert, Payer, Filter
 ├── test/
-│   └── balance.test.ts     # 35 unit tests for lib/balance
+│   ├── balance.test.ts     # 39 unit tests for lib/balance
+│   └── pagination.test.ts  # 27 unit tests for lib/pagination
+├── schema.sql              # Expenses table, (date, created_at) index, get_expense_summary() — run in the Supabase SQL editor, not applied by deploying
 ├── .env.example            # Template for local env vars (placeholders only)
 ├── .nvmrc                  # Node 24
 ├── eslint.config.mjs       # Shared eslint-config-omichelsen + one override
@@ -123,9 +143,11 @@ year. Icons are generated with `pnpm generate-pwa-assets`
 └── vite.config.ts          # React + VitePWA
 ```
 
-There is no `schema.sql` in the repo: the database schema is not versioned
-here. A fresh Supabase project needs an `expenses` table matching the
-`Expense` type in `src/lib/types.ts` (see
+`schema.sql` in the repo defines the `expenses` table, the
+`(date, created_at)` index, and the `get_expense_summary()` totals function.
+It is documentation plus SQL to run in the Supabase SQL editor — it is not
+applied by deploying or merging. A fresh Supabase project needs an
+`expenses` table matching the `Expense` type in `src/lib/types.ts` (see
 [Environment variables](#environment-variables) for the RLS note).
 
 ## Development
@@ -143,18 +165,19 @@ pnpm dev               # http://localhost:5173
 | `pnpm dev` | Vite dev server |
 | `pnpm build` | `tsc --noEmit && vite build` |
 | `pnpm preview` | Serve the production build locally |
-| `pnpm test` | Node's built-in test runner (`node --test`); 35 unit tests for `src/lib/balance.ts` — no test framework dependency |
+| `pnpm test` | Node's built-in test runner (`node --test`); 66 unit tests for `src/lib/balance.ts` and `src/lib/pagination.ts` — no test framework dependency |
 | `pnpm lint` | `eslint .` (shared config + Prettier) |
 | `pnpm typecheck` | `tsc --noEmit` |
 | `pnpm generate-pwa-assets` | Regenerate PWA icons from `public/logo.svg` |
 
 ### Quality
 
-- **Tests** (`test/balance.test.ts`): 35 tests using only `node:test` and
-  `node:assert/strict`, covering `computeBalance` (both payers, split ratios
-  0 / 0.25 / 0.5 / 0.75 / 1, empty list, multiple expenses), currency/date
-  formatting, and the split/balance labels. The React components and App
-  flow are not tested.
+- **Tests** (`test/balance.test.ts`, `test/pagination.test.ts`): 66 tests
+  using only `node:test` and `node:assert/strict`, covering `computeBalance`
+  (both payers, split ratios 0 / 0.25 / 0.5 / 0.75 / 1, empty list, multiple
+  expenses), currency/date formatting, and the split/balance labels, plus
+  the month ranges, keyset cursor, and merge/dedupe helpers in
+  `src/lib/pagination.ts`. The React components and App flow are not tested.
 - **Linting**: ESLint 10 with the shared `eslint-config-omichelsen` config,
   Prettier enforced as an ESLint rule. One override in
   `eslint.config.mjs`: `react-hooks/set-state-in-effect: 0`, because

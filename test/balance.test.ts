@@ -2,6 +2,7 @@ import { describe, it } from 'node:test'
 import assert from 'node:assert/strict'
 import {
 	computeBalance,
+	expenseBalanceContribution,
 	formatCurrency,
 	formatDate,
 	getBalanceLabel,
@@ -137,6 +138,70 @@ describe('computeBalance', () => {
 				{ amount: 100, paid_by: 'someone-else', split_ratio: 0.5 },
 			]),
 			-50
+		)
+	})
+})
+
+describe('expenseBalanceContribution', () => {
+	it('Ole paying contributes amount * (1 - split_ratio)', () => {
+		assertCloseTo(
+			expenseBalanceContribution({
+				amount: 100,
+				paid_by: 'ole',
+				split_ratio: 0.5,
+			}),
+			50
+		)
+		assertCloseTo(
+			expenseBalanceContribution({
+				amount: 100,
+				paid_by: 'ole',
+				split_ratio: 0.25,
+			}),
+			75
+		)
+	})
+
+	it('Yewleh paying contributes -amount * split_ratio', () => {
+		assertCloseTo(
+			expenseBalanceContribution({
+				amount: 100,
+				paid_by: 'yewleh',
+				split_ratio: 0.5,
+			}),
+			-50
+		)
+		assertCloseTo(
+			expenseBalanceContribution({
+				amount: 100,
+				paid_by: 'yewleh',
+				split_ratio: 0.75,
+			}),
+			-75
+		)
+	})
+
+	it('accepts amounts stored as strings', () => {
+		assertCloseTo(
+			expenseBalanceContribution({
+				amount: '120.50',
+				paid_by: 'ole',
+				split_ratio: '0.5',
+			}),
+			60.25
+		)
+	})
+
+	it('summing contributions matches computeBalance — the same math the server aggregate in schema.sql uses', () => {
+		const expenses = [
+			{ amount: 100, paid_by: 'ole', split_ratio: 0.5 },
+			{ amount: 60, paid_by: 'yewleh', split_ratio: 0.5 },
+			{ amount: 40, paid_by: 'ole', split_ratio: 0.25 },
+			{ amount: 0, paid_by: 'ole', split_ratio: 0.5 },
+		]
+		assertCloseTo(
+			expenses.reduce((sum, exp) => sum + expenseBalanceContribution(exp), 0),
+			computeBalance(expenses)
 		)
 	})
 })

@@ -27,23 +27,23 @@ export interface BalanceExpense {
 }
 
 export function computeBalance(expenses: BalanceExpense[]): number {
-	let balance = 0
+	return expenses.reduce(
+		(sum, expense) => sum + expenseBalanceContribution(expense),
+		0
+	)
+}
 
-	for (const exp of expenses) {
-		const amount = toNumber(exp.amount)
-		const myShare = toNumber(exp.split_ratio)
-		const yewlehShare = 1 - myShare
-
-		if (exp.paid_by === 'ole') {
-			// Ole paid, Yewleh owes Ole her share
-			balance += amount * yewlehShare
-		} else {
-			// Yewleh paid, I owe her my share
-			balance -= amount * myShare
-		}
-	}
-
-	return balance
+/** One expense's contribution to the balance — the same CASE expression
+ * as the get_expense_summary() function in schema.sql:
+ *   paid_by = 'ole' → amount * (1 - split_ratio)
+ *   otherwise       → -amount * split_ratio
+ * Positive = Yewleh owes Ole. Keep the two in sync: the server
+ * aggregate and this function must agree, so the headline balance
+ * (from the server) and any client-side total (from these rows) match. */
+export function expenseBalanceContribution(exp: BalanceExpense): number {
+	const amount = toNumber(exp.amount)
+	const share = toNumber(exp.split_ratio)
+	return exp.paid_by === 'ole' ? amount * (1 - share) : -amount * share
 }
 
 export function formatCurrency(amount: number): string {
