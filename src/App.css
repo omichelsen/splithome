@@ -26,6 +26,7 @@ html {
   --settled-light: #e8f2eb;
   --danger: #c0392b;
   --you: #2d4a3e;
+  --ole: #2d4a3e;
   --ole-light: #e8f0ec;
   --font: 'DM Sans', sans-serif;
   --mono: 'DM Mono', monospace;
@@ -532,6 +533,7 @@ body {
     --settled-light: #1f2f25;
     --danger: #e07a6f;
     --you: #8fc3a5;
+    --ole: #8fc3a5;
     --ole-light: #22352b;
     --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.35);
   }
