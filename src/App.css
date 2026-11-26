@@ -7,6 +7,9 @@ html {
 }
 
 :root {
+  /* Light by default; the dark block below redefines these when the
+     device is in dark mode. */
+  color-scheme: light dark;
   --bg: #f5f3ef;
   --surface: #ffffff;
   --surface2: #f0ede8;
@@ -15,6 +18,7 @@ html {
   --text2: #6b6560;
   --text3: #9b9590;
   --accent: #2d4a3e;
+  --accent-text: #2d4a3e;
   --accent-light: #e8f0ec;
   --yewleh: #8b3a5e;
   --yewleh-light: #f5e8ef;
@@ -55,7 +59,7 @@ body {
 }
 .header-content { display: flex; align-items: center; justify-content: space-between; gap: 12px; min-width: 0; }
 .header-title { min-width: 0; }
-.header-title h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; color: var(--accent); }
+.header-title h1 { font-size: 22px; font-weight: 600; letter-spacing: -0.5px; color: var(--accent-text); }
 .header-sub { font-size: 12px; color: var(--text3); display: block; margin-top: 1px; }
 
 .add-btn {
@@ -419,7 +423,7 @@ body {
   transition: border-color 0.15s;
   width: 100%;
 }
-.field input:focus { border-color: var(--accent); }
+.field input:focus { border-color: var(--accent-text); }
 
 .amount-input {
   position: relative;
@@ -508,3 +512,37 @@ body {
 }
 .submit-btn:hover { opacity: 0.88; }
 .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* ─── Dark mode — follows the device setting automatically ─── */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #171512;
+    --surface: #221f1b;
+    --surface2: #2c2822;
+    --border: #3b352d;
+    --text: #efece6;
+    --text2: #b3aca1;
+    --text3: #857e74;
+    --accent: #2d4a3e;
+    --accent-text: #8fc3a5;
+    --accent-light: #22352b;
+    --yewleh: #d18aae;
+    --yewleh-light: #35222d;
+    --settled: #7fb98d;
+    --settled-light: #1f2f25;
+    --danger: #e07a6f;
+    --you: #8fc3a5;
+    --ole-light: #22352b;
+    --shadow: 0 1px 3px rgba(0,0,0,0.4), 0 4px 12px rgba(0,0,0,0.35);
+  }
+
+  /* Hardcoded light colors that don't come from variables */
+  .error-banner { background: #3a2320; border-color: #5c3532; }
+  .balance-card.settled    { border-color: #2e4a38; }
+  .balance-card.yewleh-owes { border-color: #4d2c3d; }
+  .balance-card.ole-owes   { border-color: #2a4436; }
+  .delete-btn:hover { background: #3a2320; }
+  .skeleton-line::after {
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent);
+  }
+}
