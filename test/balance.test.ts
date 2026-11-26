@@ -6,10 +6,10 @@ import {
 	formatDate,
 	getBalanceLabel,
 	getSplitLabel,
-} from '../src/lib/balance.js'
+} from '../src/lib/balance.ts'
 
 // computeBalance returns a float, so compare with a small tolerance.
-function assertCloseTo(actual, expected, epsilon = 1e-9) {
+function assertCloseTo(actual: number, expected: number, epsilon = 1e-9) {
 	assert.ok(
 		Math.abs(actual - expected) < epsilon,
 		`expected ${actual} to be close to ${expected}`

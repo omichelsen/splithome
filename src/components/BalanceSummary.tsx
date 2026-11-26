@@ -1,12 +1,19 @@
 import { Fragment } from 'react'
 import { formatCurrency } from '../lib/balance'
 
+interface BalanceSummaryProps {
+	balance: number
+	totalExpenses: number
+	expenseCount: number
+	loading?: boolean
+}
+
 export default function BalanceSummary({
 	balance,
 	totalExpenses,
 	expenseCount,
 	loading = false,
-}) {
+}: BalanceSummaryProps) {
 	if (loading) {
 		return (
 			<div

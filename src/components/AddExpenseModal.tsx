@@ -1,10 +1,29 @@
 import { useState } from 'react'
+import type { FormEvent } from 'react'
 import { getSplitLabel } from '../lib/balance'
+import type { ExpenseInsert, Payer } from '../lib/types'
 
 const TODAY = new Date().toISOString().split('T')[0]
 
-export default function AddExpenseModal({ onAdd, onClose }) {
-	const [form, setForm] = useState({
+interface ExpenseForm {
+	description: string
+	amount: string
+	paid_by: Payer
+	split_ratio: number
+	date: string
+	notes: string
+}
+
+interface AddExpenseModalProps {
+	onAdd: (expense: ExpenseInsert) => Promise<void>
+	onClose: () => void
+}
+
+export default function AddExpenseModal({
+	onAdd,
+	onClose,
+}: AddExpenseModalProps) {
+	const [form, setForm] = useState<ExpenseForm>({
 		description: '',
 		amount: '',
 		paid_by: 'ole',
@@ -15,12 +34,17 @@ export default function AddExpenseModal({ onAdd, onClose }) {
 	const [loading, setLoading] = useState(false)
 	const [error, setError] = useState('')
 
-	const set = (field, value) => setForm((f) => ({ ...f, [field]: value }))
+	const set = <K extends keyof ExpenseForm>(field: K, value: ExpenseForm[K]) =>
+		setForm((f) => ({ ...f, [field]: value }))
 
-	const handleSubmit = async (e) => {
+	const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
 		e.preventDefault()
 		if (!form.description.trim()) return setError('Description is required')
-		if (!form.amount || isNaN(form.amount) || parseFloat(form.amount) <= 0)
+		if (
+			!form.amount ||
+			isNaN(Number(form.amount)) ||
+			parseFloat(form.amount) <= 0
+		)
 			return setError('Enter a valid amount')
 
 		setLoading(true)
@@ -29,7 +53,7 @@ export default function AddExpenseModal({ onAdd, onClose }) {
 			await onAdd({ ...form, amount: parseFloat(form.amount) })
 			onClose()
 		} catch (err) {
-			setError(err.message || 'Failed to add expense')
+			setError(err instanceof Error ? err.message : 'Failed to add expense')
 		} finally {
 			setLoading(false)
 		}
@@ -79,7 +103,7 @@ export default function AddExpenseModal({ onAdd, onClose }) {
 					<div className="field">
 						<label>Paid by</label>
 						<div className="toggle-group">
-							{['ole', 'yewleh'].map((who) => (
+							{(['ole', 'yewleh'] as const).map((who) => (
 								<button
 									key={who}
 									type="button"

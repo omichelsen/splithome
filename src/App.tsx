@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { supabase } from './lib/supabase'
-import { computeBalance } from './lib/balance'
+import { computeBalance, toNumber } from './lib/balance'
+import type { Expense, ExpenseInsert, Filter } from './lib/types'
 import BalanceSummary from './components/BalanceSummary'
 import ExpenseList from './components/ExpenseList'
 import AddExpenseModal from './components/AddExpenseModal'
@@ -36,10 +37,10 @@ function ExpenseListSkeleton() {
 }
 
 export default function App() {
-	const [expenses, setExpenses] = useState([])
+	const [expenses, setExpenses] = useState<Expense[]>([])
 	const [loading, setLoading] = useState(true)
 	const [showModal, setShowModal] = useState(false)
-	const [filter, setFilter] = useState('all') // 'all' | 'ole' | 'yewleh'
+	const [filter, setFilter] = useState<Filter>('all')
 	const [error, setError] = useState('')
 
 	async function fetchExpenses() {
@@ -74,16 +75,18 @@ export default function App() {
 			)
 			.subscribe()
 
-		return () => supabase.removeChannel(channel)
+		return () => {
+			void supabase.removeChannel(channel)
+		}
 	}, [])
 
-	async function handleAdd(expenseData) {
+	async function handleAdd(expenseData: ExpenseInsert): Promise<void> {
 		const { error } = await supabase.from('expenses').insert([expenseData])
 		if (error) throw new Error(error.message)
 		// Realtime subscription will trigger fetchExpenses automatically
 	}
 
-	async function handleDelete(id) {
+	async function handleDelete(id: Expense['id']): Promise<void> {
 		if (!confirm('Delete this expense?')) return
 		const { error } = await supabase.from('expenses').delete().eq('id', id)
 		if (error) setError('Could not delete expense.')
@@ -93,7 +96,7 @@ export default function App() {
 		filter === 'all' ? expenses : expenses.filter((e) => e.paid_by === filter)
 
 	const balance = computeBalance(expenses)
-	const totalSpent = expenses.reduce((sum, e) => sum + parseFloat(e.amount), 0)
+	const totalSpent = expenses.reduce((sum, e) => sum + toNumber(e.amount), 0)
 
 	return (
 		<div className="app">
@@ -128,7 +131,7 @@ export default function App() {
 					<div className="list-header">
 						<h2>Expenses</h2>
 						<div className="filter-tabs">
-							{['all', 'ole', 'yewleh'].map((f) => (
+							{(['all', 'ole', 'yewleh'] as const).map((f) => (
 								<button
 									key={f}
 									className={`filter-tab ${filter === f ? 'active' : ''}`}

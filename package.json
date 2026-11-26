@@ -7,10 +7,11 @@
 	"scripts": {
 		"dev": "vite",
 		"test": "node --test",
-		"build": "vite build",
+		"build": "tsc --noEmit && vite build",
 		"generate-pwa-assets": "pwa-assets-generator",
 		"preview": "vite preview",
-		"lint": "eslint ."
+		"lint": "eslint .",
+		"typecheck": "tsc --noEmit"
 	},
 	"dependencies": {
 		"@supabase/supabase-js": "^2.119.2",
@@ -18,12 +19,16 @@
 		"react-dom": "^19.3.1"
 	},
 	"devDependencies": {
+		"@types/node": "^24.19.4",
+		"@types/react": "^19.3.3",
+		"@types/react-dom": "^19.3.0",
 		"@vite-pwa/assets-generator": "^2.0.0",
 		"@vitejs/plugin-react": "^6.3.0",
 		"eslint": "^10.15.0",
 		"eslint-config-omichelsen": "^2.0.0",
 		"eslint-plugin-prettier": "5.5.7",
 		"prettier": "3.10.1",
+		"typescript": "^5.9.3",
 		"vite": "^8.4.0",
 		"vite-plugin-pwa": "^2.0.0"
 	},

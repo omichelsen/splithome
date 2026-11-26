@@ -10,12 +10,28 @@
  * Positive balance = Yewleh owes Ole
  * Negative balance = Ole owes Yewleh
  */
-export function computeBalance(expenses) {
+
+/** Amounts and split ratios can arrive as strings (Supabase numerics);
+ * read them as numbers, preserving parseFloat's string semantics. */
+export function toNumber(value: number | string): number {
+	return typeof value === 'number' ? value : parseFloat(value)
+}
+
+/** The shape computeBalance needs. `paid_by` is deliberately a plain
+ * string here, not the `Payer` union: any payer other than 'ole' is
+ * treated as Yewleh paying (the else branch below). */
+export interface BalanceExpense {
+	amount: number | string
+	paid_by: string
+	split_ratio: number | string
+}
+
+export function computeBalance(expenses: BalanceExpense[]): number {
 	let balance = 0
 
 	for (const exp of expenses) {
-		const amount = parseFloat(exp.amount)
-		const myShare = parseFloat(exp.split_ratio)
+		const amount = toNumber(exp.amount)
+		const myShare = toNumber(exp.split_ratio)
 		const yewlehShare = 1 - myShare
 
 		if (exp.paid_by === 'ole') {
@@ -30,14 +46,19 @@ export function computeBalance(expenses) {
 	return balance
 }
 
-export function formatCurrency(amount) {
+export function formatCurrency(amount: number): string {
 	return new Intl.NumberFormat('en-US', {
 		style: 'currency',
 		currency: 'USD',
 	}).format(Math.abs(amount))
 }
 
-export function getBalanceLabel(balance) {
+export type BalanceWho = 'settled' | 'yewleh' | 'ole'
+
+export function getBalanceLabel(balance: number): {
+	text: string
+	who: BalanceWho
+} {
 	if (Math.abs(balance) < 0.01)
 		return { text: 'All settled up!', who: 'settled' }
 	if (balance > 0)
@@ -45,7 +66,7 @@ export function getBalanceLabel(balance) {
 	return { text: `Ole owes Yewleh ${formatCurrency(balance)}`, who: 'ole' }
 }
 
-export function formatDate(dateStr) {
+export function formatDate(dateStr: string): string {
 	return new Date(dateStr + 'T00:00:00').toLocaleDateString('en-US', {
 		month: 'short',
 		day: 'numeric',
@@ -53,7 +74,7 @@ export function formatDate(dateStr) {
 	})
 }
 
-export function getSplitLabel(ratio) {
+export function getSplitLabel(ratio: number): string {
 	const mine = Math.round(ratio * 100)
 	const hers = 100 - mine
 	if (mine === hers) return '50/50'
