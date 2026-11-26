@@ -155,3 +155,17 @@ export function mergeExpenses(
 	const fresh = incoming.filter((expense) => !seen.has(String(expense.id)))
 	return [...existing, ...fresh].sort(compareExpenses)
 }
+
+/** Rows visible in recent mode: everything on or after `earliestDate`.
+ * `earliestDate` starts at the 90-day cutoff and moves back each time
+ * "Load more" extends the loaded range, so rows Load More fetched are
+ * actually shown. Filtering on the fixed cutoff instead hid them: the
+ * query returned August rows and they were merged into the cache, but
+ * the list still stopped at the cutoff and looked unchanged. */
+export function filterByEarliestDate(
+	expenses: Expense[],
+	earliestDate: string
+): Expense[] {
+	if (!earliestDate) return expenses
+	return expenses.filter((expense) => expense.date >= earliestDate)
+}
