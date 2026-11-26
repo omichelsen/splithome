@@ -3,7 +3,6 @@ import { supabase } from './lib/supabase'
 import { fetchExpensesForMonth, fetchSummary } from './lib/expenses'
 import type { ExpenseSummary } from './lib/expenses'
 import {
-	RECENT_WINDOW_DAYS,
 	filterByEarliestDate,
 	formatMonthLabel,
 	mergeExpenses,
@@ -57,15 +56,14 @@ type MonthCache = Record<string, Expense[]>
 export default function App() {
 	const [months, setMonths] = useState<MonthCache>({})
 	const [visibleKeys, setVisibleKeys] = useState<string[]>([])
-	const [mode, setMode] = useState<'recent' | 'month'>('recent')
 	/** Whether a month is fully loaded. The oldest month of the recent
 	 * window starts out partial (it begins at the 90-day cutoff). */
 	const [monthComplete, setMonthComplete] = useState<Record<string, boolean>>(
 		{}
 	)
-	/** Earliest date shown in recent mode. Starts at the 90-day cutoff
-	 * and moves back as "Load more" extends the loaded range, so rows
-	 * it fetched are actually shown. */
+	/** Earliest date shown. Starts at the 90-day cutoff and moves
+	 * back as "Load more" extends the loaded range, so rows it fetched
+	 * are actually shown. */
 	const [earliestVisibleDate, setEarliestVisibleDate] = useState('')
 	const [summary, setSummary] = useState<ExpenseSummary | null>(null)
 	const [summaryLoading, setSummaryLoading] = useState(true)
@@ -73,18 +71,14 @@ export default function App() {
 	const [loadingMore, setLoadingMore] = useState(false)
 	const [showModal, setShowModal] = useState(false)
 	const [filter, setFilter] = useState<Filter>('all')
-	const [monthInput, setMonthInput] = useState('')
 	const [error, setError] = useState('')
-	// The month picker cannot jump past the current month. Read once, in
-	// a state initializer, so render stays pure.
-	const [currentMonth] = useState(() => toDateString(new Date()).slice(0, 7))
 
 	// The realtime handler is registered once on mount, so it reads the
-	// latest months/visibleKeys/mode through this ref instead of closing
+	// latest months/visibleKeys through this ref instead of closing
 	// over the first render's state.
-	const stateRef = useRef({ months, visibleKeys, mode })
+	const stateRef = useRef({ months, visibleKeys })
 	useEffect(() => {
-		stateRef.current = { months, visibleKeys, mode }
+		stateRef.current = { months, visibleKeys }
 	})
 
 	/** Fetch one month and store it. `merge` keeps rows already cached
@@ -126,7 +120,6 @@ export default function App() {
 		const keys = monthsInRange(cutoff, toDateString(today))
 		setEarliestVisibleDate(cutoff)
 		setVisibleKeys(keys)
-		setMode('recent')
 		try {
 			await Promise.all(
 				keys.map((key, index) =>
@@ -276,36 +269,6 @@ export default function App() {
 		}
 	}
 
-	/** Jump straight to one month, loading just that month. A month
-	 * picked from the recent window may only be partially loaded, so it
-	 * is fetched in full when needed. */
-	async function handleMonthPick(value: string): Promise<void> {
-		if (!value) return
-		setMonthInput(value)
-		setMode('month')
-		setVisibleKeys([value])
-		if (!monthComplete[value]) {
-			setListLoading(true)
-			try {
-				await loadMonth(value)
-				setMonthComplete((prev) => ({ ...prev, [value]: true }))
-			} catch {
-				setError('Could not load expenses for that month.')
-			} finally {
-				setListLoading(false)
-			}
-		}
-	}
-
-	function handleBackToRecent(): void {
-		const today = new Date()
-		const cutoff = recentCutoff(today)
-		setEarliestVisibleDate(cutoff)
-		setMode('recent')
-		setMonthInput('')
-		setVisibleKeys(monthsInRange(cutoff, toDateString(today)))
-	}
-
 	/** Is there anything older to load? The summary knows the oldest
 	 * expense date; once the oldest loaded month is complete and is the
 	 * month of that date, there is nothing left. */
@@ -318,14 +281,13 @@ export default function App() {
 	})()
 
 	const visibleExpenses = visibleKeys.flatMap((key) => months[key] ?? [])
-	// In recent mode the list stops at the earliest date actually
-	// loaded — the 90-day cutoff at first, then further back as "Load
-	// more" extends it. Filtering on the fixed cutoff hid rows Load
-	// More had fetched, so the list looked unchanged after clicking it.
-	const inWindowExpenses =
-		mode === 'recent' && earliestVisibleDate
-			? filterByEarliestDate(visibleExpenses, earliestVisibleDate)
-			: visibleExpenses
+	// The list stops at the earliest date actually loaded — the
+	// 90-day cutoff at first, then further back as "Load more" extends
+	// it. Filtering on the fixed cutoff hid rows Load More had fetched,
+	// so the list looked unchanged after clicking it.
+	const inWindowExpenses = earliestVisibleDate
+		? filterByEarliestDate(visibleExpenses, earliestVisibleDate)
+		: visibleExpenses
 	const filtered =
 		filter === 'all'
 			? inWindowExpenses
@@ -380,42 +342,10 @@ export default function App() {
 						</div>
 					</div>
 
-					<div className="month-controls">
-						{mode === 'recent' ? (
-							<span className="month-label">
-								Last {RECENT_WINDOW_DAYS} days
-							</span>
-						) : (
-							<button className="month-back" onClick={handleBackToRecent}>
-								← Last {RECENT_WINDOW_DAYS} days
-							</button>
-						)}
-						<label className="month-picker">
-							<span>Jump to month</span>
-							<input
-								type="month"
-								value={monthInput}
-								max={currentMonth}
-								onChange={(event) => void handleMonthPick(event.target.value)}
-								aria-label="Jump to month"
-							/>
-						</label>
-					</div>
-
 					{listLoading ? (
 						<ExpenseListSkeleton />
 					) : (
-						<ExpenseList
-							expenses={filtered}
-							onDelete={handleDelete}
-							emptyMessage={
-								mode === 'month' &&
-								inWindowExpenses.length === 0 &&
-								visibleKeys.length > 0
-									? `No expenses in ${formatMonthLabel(visibleKeys[0])}.`
-									: undefined
-							}
-						/>
+						<ExpenseList expenses={filtered} onDelete={handleDelete} />
 					)}
 
 					{!listLoading && hasMore && (

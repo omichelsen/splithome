@@ -78,9 +78,8 @@ checks the two agree.
 **Loading older expenses:** the list shows the last 90 days by default,
 loaded a month at a time. "Load older expenses" fetches the next older month
 using a keyset cursor on (`date`, `created_at`, `id`) — no offsets, so rows
-added while scrolling back are not duplicated or skipped. The month picker
-jumps straight to any month. Already-loaded months are cached, so going back
-and forth never refetches.
+added while scrolling back are not duplicated or skipped. Already-loaded
+months are cached, so going back and forth never refetches.
 
 **Types** (`src/lib/types.ts`): `Expense` is the row as stored in Supabase
 (`id`, `description`, `amount`, `paid_by: 'ole' | 'yewleh'`, `split_ratio`,
